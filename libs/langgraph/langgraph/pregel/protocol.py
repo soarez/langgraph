@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from collections.abc import AsyncIterator, Callable, Iterator, Sequence
-from typing import Any, Generic, Literal, cast, overload
+from typing import Any, Generic, Literal, Protocol, cast, overload, runtime_checkable
 
 from langchain_core.runnables import Runnable, RunnableConfig
 from langchain_core.runnables.graph import Graph as DrawableGraph
@@ -19,7 +19,7 @@ from langgraph.types import (
 )
 from langgraph.typing import ContextT, InputT, OutputT, StateT
 
-__all__ = ("PregelProtocol", "StreamProtocol")
+__all__ = ("DeclaresSubgraphs", "PregelProtocol", "StreamProtocol")
 
 
 class PregelProtocol(Runnable[InputT, Any], Generic[StateT, ContextT, InputT, OutputT]):
@@ -267,6 +267,19 @@ class PregelProtocol(Runnable[InputT, Any], Generic[StateT, ContextT, InputT, Ou
         interrupt_after: All | Sequence[str] | None = None,
         version: Literal["v1", "v2"] = "v1",
     ) -> dict[str, Any] | Any: ...
+
+
+@runtime_checkable
+class DeclaresSubgraphs(Protocol):
+    """Implemented by node objects that know which subgraphs they may invoke.
+
+    A node that declares is not searched for subgraphs at compile time, so this
+    reaches graphs no analysis of the node's code could find - e.g. one picked
+    at runtime by name. Only a node given to `add_node` as a `Runnable` is
+    asked: a plain callable is wrapped before the graph sees it.
+    """
+
+    def __langgraph_subgraphs__(self) -> Sequence[PregelProtocol]: ...
 
 
 StreamChunk = tuple[tuple[str, ...], str, Any]

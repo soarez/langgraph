@@ -7,12 +7,14 @@ from langgraph.prebuilt.tool_node import (
     InjectedStore,
     ToolNode,
     ToolRuntime,
+    declare_subgraphs,
     tools_condition,
 )
 from langgraph.prebuilt.tool_validator import ValidationNode
 
 __all__ = [
     "create_react_agent",
+    "declare_subgraphs",
     "ToolNode",
     "ToolCallTransformer",
     "tools_condition",

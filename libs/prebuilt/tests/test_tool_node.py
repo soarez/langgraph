@@ -41,6 +41,7 @@ from langgraph.prebuilt import (
     InjectedState,
     InjectedStore,
     ToolNode,
+    declare_subgraphs,
 )
 from langgraph.prebuilt.tool_node import (
     TOOL_CALL_ERROR_TEMPLATE,
@@ -2422,3 +2423,45 @@ def test_tool_node_list_return_mixed_with_regular_tool() -> None:
     tool_call_ids = {m.tool_call_id for m in all_msgs}
     assert list_tool_id in tool_call_ids
     assert regular_tool_id in tool_call_ids
+
+
+def _declaring_tools() -> tuple[Any, Any, BaseTool]:
+    """A tool that picks one of two graphs by a name given at runtime."""
+    graphs = {
+        name: StateGraph(MessagesState)
+        .add_node("inner", lambda state: state)
+        .add_edge(START, "inner")
+        .compile()
+        for name in ("one", "two")
+    }
+
+    @dec_tool
+    def dispatch(which: str) -> str:
+        """Hand the work to a graph."""
+        graphs[which].invoke({"messages": []})
+        return "done"
+
+    return (
+        graphs["one"],
+        graphs["two"],
+        declare_subgraphs(dispatch, list(graphs.values())),
+    )
+
+
+def test_tool_node_reports_subgraphs_declared_by_its_tools() -> None:
+    one, two, dispatch = _declaring_tools()
+
+    builder = StateGraph(MessagesState)
+    builder.add_node("tools", ToolNode([dispatch]))
+    builder.add_edge(START, "tools")
+    graph = builder.compile()
+
+    assert graph.nodes["tools"].subgraphs == [one, two]
+
+
+def test_tool_node_reports_nothing_when_no_tool_declares() -> None:
+    def plain_tool(x: int) -> str:
+        """A normal tool."""
+        return str(x)
+
+    assert ToolNode([plain_tool]).__langgraph_subgraphs__() == []

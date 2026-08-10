@@ -96,6 +96,7 @@ from typing_extensions import TypeVar, Unpack
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
+    from langgraph.pregel.protocol import PregelProtocol
     from langgraph.runtime import Runtime
     from pydantic_core import ErrorDetails
 
@@ -619,6 +620,28 @@ class _InjectedArgs:
     _optional_state_args: set[str]
 
 
+_DECLARED_SUBGRAPHS = "__langgraph_declared_subgraphs__"
+
+
+def declare_subgraphs(tool: BaseTool, subgraphs: Sequence[PregelProtocol]) -> BaseTool:
+    """Declare the subgraphs a tool may invoke.
+
+    A `ToolNode` holding the tool reports these to the graph at compile time,
+    which is how graphs a tool reaches at runtime - e.g. one picked by name -
+    become visible to `get_graph()` and `get_subgraphs()` without a run.
+
+    Args:
+        tool: The tool that invokes the subgraphs. Mutated in place, since
+            tools are pydantic models and reject ad-hoc attributes.
+        subgraphs: The compiled graphs the tool may invoke.
+
+    Returns:
+        The same tool.
+    """
+    object.__setattr__(tool, _DECLARED_SUBGRAPHS, tuple(subgraphs))
+    return tool
+
+
 class ToolNode(RunnableCallable):
     """A node for executing tools in LangGraph workflows.
 
@@ -789,6 +812,14 @@ class ToolNode(RunnableCallable):
     def tools_by_name(self) -> dict[str, BaseTool]:
         """Mapping from tool name to BaseTool instance."""
         return self._tools_by_name
+
+    def __langgraph_subgraphs__(self) -> list[PregelProtocol]:
+        """Subgraphs this node may invoke, as declared by its tools."""
+        return [
+            subgraph
+            for tool in self._tools_by_name.values()
+            for subgraph in getattr(tool, _DECLARED_SUBGRAPHS, ())
+        ]
 
     def _func(
         self,

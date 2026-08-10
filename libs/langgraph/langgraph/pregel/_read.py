@@ -15,7 +15,7 @@ from langgraph._internal._runnable import RunnableCallable, RunnableSeq
 from langgraph._internal._timeout import coerce_timeout_policy
 from langgraph.pregel._utils import find_subgraph_pregel
 from langgraph.pregel._write import ChannelWrite
-from langgraph.pregel.protocol import PregelProtocol
+from langgraph.pregel.protocol import DeclaresSubgraphs, PregelProtocol
 from langgraph.types import CachePolicy, RetryPolicy, TimeoutPolicy
 
 READ_TYPE = Callable[[str | Sequence[str], bool], Any | dict[str, Any]]
@@ -181,6 +181,16 @@ class PregelNode:
         self.error_handler_node = error_handler_node
         if subgraphs is not None:
             self.subgraphs = subgraphs
+        elif isinstance(self.bound, DeclaresSubgraphs):
+            from langgraph.pregel import Pregel
+
+            # a graph that disabled checkpointing has no state to address, so
+            # it is not recorded here either
+            self.subgraphs = [
+                g
+                for g in self.bound.__langgraph_subgraphs__()
+                if not isinstance(g, Pregel) or g.checkpointer is not False
+            ]
         elif self.bound is not DEFAULT_BOUND:
             try:
                 subgraph = find_subgraph_pregel(self.bound)
