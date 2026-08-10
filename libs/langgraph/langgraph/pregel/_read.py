@@ -180,7 +180,21 @@ class PregelNode:
         self.is_error_handler = is_error_handler
         self.error_handler_node = error_handler_node
         if subgraphs is not None:
-            self.subgraphs = subgraphs
+            from langgraph.pregel import Pregel
+
+            self.subgraphs = []
+            for declared in subgraphs:
+                if not isinstance(declared, PregelProtocol):
+                    raise ValueError(
+                        f"Declared subgraph is not a compiled graph: {declared!r}"
+                    )
+                # a graph that disabled checkpointing has no state to address,
+                # so it is not recorded here either
+                if (
+                    not isinstance(declared, Pregel)
+                    or declared.checkpointer is not False
+                ):
+                    self.subgraphs.append(declared)
         elif self.bound is not DEFAULT_BOUND:
             try:
                 subgraph = find_subgraph_pregel(self.bound)

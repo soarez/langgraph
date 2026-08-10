@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, Generic, Protocol, TypeAlias
+from typing import TYPE_CHECKING, Any, Generic, Protocol, TypeAlias
 
 from langchain_core.runnables import Runnable, RunnableConfig
 from langgraph.store.base import BaseStore
@@ -11,6 +11,9 @@ from langgraph._internal._typing import EMPTY_SEQ
 from langgraph.runtime import Runtime
 from langgraph.types import CachePolicy, RetryPolicy, StreamWriter, TimeoutPolicy
 from langgraph.typing import ContextT, NodeInputT, NodeInputT_contra
+
+if TYPE_CHECKING:
+    from langgraph.pregel.protocol import PregelProtocol
 
 
 class _Node(Protocol[NodeInputT_contra]):
@@ -93,3 +96,4 @@ class StateNodeSpec(Generic[NodeInputT, ContextT]):
     ends: tuple[str, ...] | dict[str, str] | None = EMPTY_SEQ
     defer: bool = False
     timeout: TimeoutPolicy | None = None
+    subgraphs: Sequence[PregelProtocol] | None = None

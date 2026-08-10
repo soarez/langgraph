@@ -1091,6 +1091,14 @@ class Pregel(
             if namespace is not None:
                 if not namespace.startswith(name):
                     continue
+                if len(node.subgraphs) > 1 and namespace.split(NS_SEP, 1)[0] == name:
+                    # namespaces address a node, not one of its subgraphs, so
+                    # picking the first would resolve - and let update_state
+                    # write - to the wrong graph
+                    raise ValueError(
+                        f"Node {name} has {len(node.subgraphs)} subgraphs, "
+                        f"cannot resolve namespace {namespace}"
+                    )
 
             # find the subgraph, if any
             graph = node.subgraphs[0] if node.subgraphs else None
@@ -1193,8 +1201,11 @@ class Pregel(
             ),
             manager=None,
         )
-        # get the subgraphs
-        subgraphs = dict(self.get_subgraphs())
+        # get the subgraphs - a node with several cannot be resolved to one, so
+        # its tasks get no state rather than the wrong graph's
+        subgraphs = {
+            n: g for n, g in self.get_subgraphs() if len(self.nodes[n].subgraphs) == 1
+        }
         parent_ns = saved.config[CONF].get(CONFIG_KEY_CHECKPOINT_NS, "")
         task_states: dict[str, RunnableConfig | StateSnapshot] = {}
         for task in next_tasks.values():
@@ -1316,8 +1327,13 @@ class Pregel(
             ),
             manager=None,
         )
-        # get the subgraphs
-        subgraphs = {n: g async for n, g in self.aget_subgraphs()}
+        # get the subgraphs - a node with several cannot be resolved to one, so
+        # its tasks get no state rather than the wrong graph's
+        subgraphs = {
+            n: g
+            async for n, g in self.aget_subgraphs()
+            if len(self.nodes[n].subgraphs) == 1
+        }
         parent_ns = saved.config[CONF].get(CONFIG_KEY_CHECKPOINT_NS, "")
         task_states: dict[str, RunnableConfig | StateSnapshot] = {}
         for task in next_tasks.values():

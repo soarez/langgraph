@@ -13,6 +13,7 @@ from inspect import isclass, isfunction, ismethod, signature
 from types import FunctionType
 from types import NoneType as NoneType
 from typing import (
+    TYPE_CHECKING,
     Any,
     Generic,
     Literal,
@@ -89,6 +90,9 @@ from langgraph.types import (
 )
 from langgraph.typing import ContextT, InputT, NodeInputT, OutputT, StateT
 from langgraph.warnings import LangGraphDeprecatedSinceV05, LangGraphDeprecatedSinceV10
+
+if TYPE_CHECKING:
+    from langgraph.pregel.protocol import PregelProtocol
 
 __all__ = ("StateGraph", "CompiledStateGraph")
 
@@ -384,6 +388,7 @@ class StateGraph(Generic[StateT, ContextT, InputT, OutputT]):
         error_handler: StateNode[Any, ContextT] | None = None,
         destinations: dict[str, str] | tuple[str, ...] | None = None,
         timeout: float | timedelta | TimeoutPolicy | None = None,
+        subgraphs: Sequence[PregelProtocol] | None = None,
         **kwargs: Unpack[DeprecatedKwargs],
     ) -> Self:
         """Add a new node to the `StateGraph`, input schema is inferred as the state schema.
@@ -410,6 +415,15 @@ class StateGraph(Generic[StateT, ContextT, InputT, OutputT]):
                 !!! warning
 
                     This is only used for graph rendering and doesn't have any effect on the graph execution.
+            subgraphs: Compiled graphs this node may invoke.
+
+                Useful when a node calls a graph that cannot be found by inspecting its code — for example one selected by name at run time.
+
+                An empty sequence declares that there are none, which suppresses that inspection; leave unset to keep it. A graph compiled with `checkpointer=False` has no state to address, and is dropped.
+
+                !!! warning
+
+                    This is only used for graph introspection and rendering and has no effect on execution.
 
         Example:
             ```python
@@ -453,6 +467,7 @@ class StateGraph(Generic[StateT, ContextT, InputT, OutputT]):
         error_handler: StateNode[Any, ContextT] | None = None,
         destinations: dict[str, str] | tuple[str, ...] | None = None,
         timeout: float | timedelta | TimeoutPolicy | None = None,
+        subgraphs: Sequence[PregelProtocol] | None = None,
         **kwargs: Unpack[DeprecatedKwargs],
     ) -> Self:
         """Add a new node to the `StateGraph` where input schema is specified.
@@ -479,6 +494,15 @@ class StateGraph(Generic[StateT, ContextT, InputT, OutputT]):
                 !!! warning
 
                     This is only used for graph rendering and doesn't have any effect on the graph execution.
+            subgraphs: Compiled graphs this node may invoke.
+
+                Useful when a node calls a graph that cannot be found by inspecting its code — for example one selected by name at run time.
+
+                An empty sequence declares that there are none, which suppresses that inspection; leave unset to keep it. A graph compiled with `checkpointer=False` has no state to address, and is dropped.
+
+                !!! warning
+
+                    This is only used for graph introspection and rendering and has no effect on execution.
 
         Example:
             ```python
@@ -527,6 +551,7 @@ class StateGraph(Generic[StateT, ContextT, InputT, OutputT]):
         error_handler: StateNode[Any, ContextT] | None = None,
         destinations: dict[str, str] | tuple[str, ...] | None = None,
         timeout: float | timedelta | TimeoutPolicy | None = None,
+        subgraphs: Sequence[PregelProtocol] | None = None,
         **kwargs: Unpack[DeprecatedKwargs],
     ) -> Self:
         """Add a new node to the `StateGraph`, input schema is inferred as the state schema.
@@ -552,6 +577,15 @@ class StateGraph(Generic[StateT, ContextT, InputT, OutputT]):
                 !!! warning
 
                     This is only used for graph rendering and doesn't have any effect on the graph execution.
+            subgraphs: Compiled graphs this node may invoke.
+
+                Useful when a node calls a graph that cannot be found by inspecting its code — for example one selected by name at run time.
+
+                An empty sequence declares that there are none, which suppresses that inspection; leave unset to keep it. A graph compiled with `checkpointer=False` has no state to address, and is dropped.
+
+                !!! warning
+
+                    This is only used for graph introspection and rendering and has no effect on execution.
 
         Example:
             ```python
@@ -596,6 +630,7 @@ class StateGraph(Generic[StateT, ContextT, InputT, OutputT]):
         error_handler: StateNode[Any, ContextT] | None = None,
         destinations: dict[str, str] | tuple[str, ...] | None = None,
         timeout: float | timedelta | TimeoutPolicy | None = None,
+        subgraphs: Sequence[PregelProtocol] | None = None,
         **kwargs: Unpack[DeprecatedKwargs],
     ) -> Self:
         """Add a new node to the `StateGraph`, input schema is specified.
@@ -625,6 +660,15 @@ class StateGraph(Generic[StateT, ContextT, InputT, OutputT]):
                 !!! warning
 
                     This is only used for graph rendering and doesn't have any effect on the graph execution.
+            subgraphs: Compiled graphs this node may invoke.
+
+                Useful when a node calls a graph that cannot be found by inspecting its code — for example one selected by name at run time.
+
+                An empty sequence declares that there are none, which suppresses that inspection; leave unset to keep it. A graph compiled with `checkpointer=False` has no state to address, and is dropped.
+
+                !!! warning
+
+                    This is only used for graph introspection and rendering and has no effect on execution.
 
         Example:
             ```python
@@ -672,6 +716,7 @@ class StateGraph(Generic[StateT, ContextT, InputT, OutputT]):
         error_handler: StateNode[Any, ContextT] | None = None,
         destinations: dict[str, str] | tuple[str, ...] | None = None,
         timeout: float | timedelta | TimeoutPolicy | None = None,
+        subgraphs: Sequence[PregelProtocol] | None = None,
         **kwargs: Unpack[DeprecatedKwargs],
     ) -> Self:
         """Add a new node to the `StateGraph`.
@@ -710,6 +755,15 @@ class StateGraph(Generic[StateT, ContextT, InputT, OutputT]):
                 and the retry policy (if any) decides whether to retry. Timeouts
                 are supported only for async nodes; sync nodes cannot be safely
                 cancelled in-process.
+            subgraphs: Compiled graphs this node may invoke.
+
+                Useful when a node calls a graph that cannot be found by inspecting its code — for example one selected by name at run time.
+
+                An empty sequence declares that there are none, which suppresses that inspection; leave unset to keep it. A graph compiled with `checkpointer=False` has no state to address, and is dropped.
+
+                !!! warning
+
+                    This is only used for graph introspection and rendering and has no effect on execution.
 
         Example:
             ```python
@@ -849,6 +903,10 @@ class StateGraph(Generic[StateT, ContextT, InputT, OutputT]):
 
         if destinations is not None:
             ends = destinations
+        if subgraphs is not None:
+            # snapshot it: the spec outlives this call, and the graph may be
+            # compiled more than once
+            subgraphs = tuple(subgraphs)
 
         resolved_input_schema: type[Any] = (
             input_schema or inferred_input_schema or self.state_schema
@@ -880,6 +938,7 @@ class StateGraph(Generic[StateT, ContextT, InputT, OutputT]):
                 ends=ends,
                 defer=defer,
                 timeout=timeout,
+                subgraphs=subgraphs,
             )
         elif inferred_input_schema is not None:
             self.nodes[node] = StateNodeSpec(
@@ -892,6 +951,7 @@ class StateGraph(Generic[StateT, ContextT, InputT, OutputT]):
                 ends=ends,
                 defer=defer,
                 timeout=timeout,
+                subgraphs=subgraphs,
             )
         else:
             self.nodes[node] = StateNodeSpec[StateT, ContextT](
@@ -904,6 +964,7 @@ class StateGraph(Generic[StateT, ContextT, InputT, OutputT]):
                 ends=ends,
                 defer=defer,
                 timeout=timeout,
+                subgraphs=subgraphs,
             )
 
         input_schema = input_schema or inferred_input_schema
@@ -1530,6 +1591,7 @@ class CompiledStateGraph(
                 error_handler_node=node.error_handler_node,
                 bound=node.runnable,  # type: ignore[arg-type]
                 timeout=node.timeout,
+                subgraphs=node.subgraphs,
             )
         else:
             raise RuntimeError
