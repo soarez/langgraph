@@ -210,7 +210,12 @@ jobs:
             uv run pip install langgraph
           fi
 
-          if [[ "$PKG_NAME" == *checkpoint* || "$PKG_NAME" == *prebuilt* ]]; then
+          if [[ "$PKG_NAME" == "langgraph-agent2agent" ]]; then
+            # Distribution name and import path differ here: langgraph-a2a is
+            # taken on PyPI by an unrelated project, so neither the dotted nor
+            # the underscored derivation below produces the right name.
+            IMPORT_NAME="langgraph.a2a"
+          elif [[ "$PKG_NAME" == *checkpoint* || "$PKG_NAME" == *prebuilt* ]]; then
             # since checkpoint packages are namespace packages, import them with . convention
             # i.e. import langgraph.checkpoint or langgraph.checkpoint.sqlite
             IMPORT_NAME="$(echo "$PKG_NAME" | sed s/-/./g)"

@@ -1,0 +1,101 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "langgraph-agent2agent"
+version = "0.1.0"
+description = "Serve a compiled LangGraph as a conformant Agent2Agent (A2A) 1.0 agent."
+authors = []
+requires-python = ">=3.11"
+readme = "README.md"
+license = "MIT"
+license-files = ['LICENSE']
+classifiers = [
+    'Development Status :: 3 - Alpha',
+    'Programming Language :: Python',
+    'Programming Language :: Python :: Implementation :: CPython',
+    'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3 :: Only',
+    'Programming Language :: Python :: 3.11',
+    'Programming Language :: Python :: 3.12',
+    'Programming Language :: Python :: 3.13',
+    'Programming Language :: Python :: 3.14',
+]
+dependencies = [
+    "a2a-sdk[http-server]>=1.1,<2",
+    "langgraph>=1.2,<2",
+]
+
+[project.urls]
+Source = "https://github.com/langchain-ai/langgraph/tree/main/libs/a2a"
+Twitter = "https://x.com/langchain_oss"
+Slack = "https://www.langchain.com/join-community"
+Reddit = "https://www.reddit.com/r/LangChain/"
+
+[dependency-groups]
+test = [
+    "pytest",
+    "pytest-asyncio",
+    "pytest-mock",
+    "pytest-watcher",
+    "httpx",
+    "uvicorn",
+    "langchain-core",
+    "langgraph",
+    "langgraph-checkpoint",
+    "langgraph-checkpoint-sqlite",
+]
+lint = [
+    "ruff",
+    "codespell",
+    "ty",
+]
+dev = [
+    {include-group = "test"},
+    {include-group = "lint"},
+]
+
+[tool.uv]
+default-groups = ['dev']
+
+[tool.uv.sources]
+langgraph = { path = "../langgraph", editable = true }
+langgraph-checkpoint = { path = "../checkpoint", editable = true }
+langgraph-checkpoint-sqlite = { path = "../checkpoint-sqlite", editable = true }
+langgraph-prebuilt = { path = "../prebuilt", editable = true }
+
+[tool.hatch.build.targets.wheel]
+include = ["langgraph", "examples", "extensions"]
+
+[tool.pytest.ini_options]
+addopts = "--strict-markers --strict-config --durations=5 -vv"
+asyncio_mode = "auto"
+markers = [
+    "tck: checks that require the pinned A2A TCK checkout",
+]
+
+[tool.ruff]
+lint.select = [ "E", "F", "I", "PLC0415", "RUF100", "TID251", "UP" ]
+lint.ignore = [ "E501" ]
+lint.per-file-ignores = { "langgraph/**" = ["PLC0415"], "examples/**" = ["PLC0415"] }
+target-version = "py311"
+
+[tool.ty.rules]
+call-non-callable = "ignore"
+deprecated = "ignore"
+invalid-argument-type = "ignore"
+invalid-assignment = "ignore"
+invalid-await = "ignore"
+invalid-return-type = "ignore"
+no-matching-overload = "ignore"
+unused-type-ignore-comment = "ignore"
+unresolved-attribute = "ignore"
+unresolved-import = "ignore"
+unsupported-operator = "ignore"
+
+[tool.pytest-watcher]
+now = true
+delay = 0.1
+runner_args = ["--ff", "-v", "--tb", "short"]
+patterns = ["*.py"]

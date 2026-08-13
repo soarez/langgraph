@@ -1,0 +1,3 @@
+# The pinned A2A TCK checkout and its reports, fetched by `make tck`.
+.tck/
+reports/

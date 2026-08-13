@@ -21,6 +21,7 @@ Other pytest arguments can also be supplied inside the `TEST` variable.
 The repository contains several Python and JavaScript/TypeScript libraries.
 Below is a high-level overview:
 
+- **a2a** – serve a compiled graph as an Agent2Agent (A2A) 1.0 agent.
 - **checkpoint** – base interfaces for LangGraph checkpointers.
 - **checkpoint-postgres** – Postgres implementation of the checkpoint saver.
 - **checkpoint-sqlite** – SQLite implementation of the checkpoint saver.
@@ -44,6 +45,9 @@ checkpoint
 
 prebuilt
 └── langgraph
+
+langgraph
+└── a2a
 
 sdk-py
 ├── langgraph

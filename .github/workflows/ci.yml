@@ -45,6 +45,7 @@ jobs:
               - 'libs/checkpoint-postgres/**'
               - 'libs/checkpoint-conformance/**'
               - 'libs/prebuilt/**'
+              - 'libs/a2a/**'
             deps:
               - '**/pyproject.toml'
               - '**/uv.lock'
@@ -70,6 +71,7 @@ jobs:
             "libs/checkpoint-postgres",
             "libs/checkpoint-conformance",
             "libs/prebuilt",
+            "libs/a2a",
           ]
     if: needs.changes.outputs.python == 'true' || needs.changes.outputs.deps == 'true'
     uses: ./.github/workflows/_lint.yml
@@ -96,6 +98,14 @@ jobs:
     uses: ./.github/workflows/_test.yml
     with:
       working-directory: ${{ matrix.working-directory }}
+    secrets: inherit
+
+  # NOTE: a2a is tested separately because it requires a different matrix
+  test-a2a:
+    needs: changes
+    if: needs.changes.outputs.python == 'true' || needs.changes.outputs.deps == 'true'
+    name: "cd libs/a2a"
+    uses: ./.github/workflows/_test_a2a.yml
     secrets: inherit
 
   # NOTE: we're testing langgraph separately because it requires a different matrix
@@ -170,6 +180,31 @@ jobs:
     uses: ./.github/workflows/_sdk_integration_test.yml
     secrets: inherit
 
+  a2a-conformance:
+    needs: changes
+    if: needs.changes.outputs.python == 'true' || needs.changes.outputs.deps == 'true'
+    name: "A2A TCK conformance"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Python
+        uses: ./.github/actions/uv_setup
+        with:
+          python-version: "3.12"
+          cache-suffix: tck-a2a
+          working-directory: libs/a2a
+      - name: Install dependencies
+        run: uv sync
+        working-directory: libs/a2a
+      # Clone and build the pinned TCK first, so the gate below reports a
+      # conformance result rather than skipping when the checkout is absent.
+      - name: Fetch the pinned A2A TCK
+        run: uv run python -m tests.tck.run --clone-only
+        working-directory: libs/a2a
+      - name: Run the TCK against the reference server
+        run: uv run pytest tests/test_tck.py -v
+        working-directory: libs/a2a
+
   ci_success:
     name: "CI Success"
     needs:
@@ -177,6 +212,8 @@ jobs:
         lint,
         test,
         test-langgraph,
+        test-a2a,
+        a2a-conformance,
         check-sdk-methods,
         check-schema,
         integration-test,

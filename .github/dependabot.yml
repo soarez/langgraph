@@ -18,6 +18,23 @@ updates:
           - "major"
 
   - package-ecosystem: "uv"
+    directory: "/libs/a2a"
+    schedule:
+      interval: "monthly"
+    groups:
+      minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+      major:
+        patterns:
+          - "*"
+        update-types:
+          - "major"
+
+  - package-ecosystem: "uv"
     directory: "/libs/checkpoint"
     schedule:
       interval: "monthly"

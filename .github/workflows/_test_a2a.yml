@@ -1,0 +1,62 @@
+name: test a2a
+
+# libs/a2a starts at 3.11, not 3.10: `langgraph.config.get_config()` refuses to
+# run in an async context below 3.11, and `interrupt()` calls it — so the
+# package's durable pause, which is the whole point of it, cannot work there.
+# Hence a matrix of its own rather than the shared one.
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version:
+          - "3.11"
+          - "3.12"
+          - "3.13"
+          - "3.14"
+
+    name: "test #${{ matrix.python-version }}"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: ./.github/actions/uv_setup
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache-suffix: test-a2a
+          working-directory: libs/a2a
+      - name: Login to Docker Hub
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
+        if: ${{ !github.event.pull_request.head.repo.fork }}
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_RO_TOKEN }}
+
+      - name: Install dependencies
+        shell: bash
+        working-directory: libs/a2a
+        run: uv sync --frozen --group test --no-dev
+
+      - name: Run tests
+        shell: bash
+        working-directory: libs/a2a
+        run: make test
+
+      - name: Ensure the tests did not create any additional files
+        shell: bash
+        working-directory: libs/a2a
+        run: |
+          set -eu
+
+          STATUS="$(git status)"
+          echo "$STATUS"
+
+          # grep will exit non-zero if the target message isn't found,
+          # and `set -e` above will cause the step to fail.
+          echo "$STATUS" | grep 'nothing to commit, working tree clean'
